@@ -3,23 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0B0B12">
+<meta name="theme-color" content="#2E282A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Budget</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0B0B12; --fg:#FCFCFC; --pos:#00B84C; --neg:#F83800; --dim:#2A2A38; }
+  :root {
+    --bg:  #2E282A;   /* Jet          - background                        */
+    --fg:  #B4C1A8;   /* sage         - body text, borders, chart, meters */
+    --pos: #B4C1A8;   /* sage         - on/under budget (same as --fg)    */
+    --neg: #CD5334;   /* Flame        - over budget, alarms               */
+    --hi:  #EEEEEE;   /* Pale Dogwood - headings and hero numerals        */
+    --dim: #4A4640;   /* rules, empty meter segments                      */
+  }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { margin:0; background:var(--bg); color:var(--fg); }
   body { font-family:'Silkscreen',monospace; font-size:13px; letter-spacing:.5px;
-         padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 32px);
+         padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 84px);
          max-width:480px; margin:0 auto; image-rendering:pixelated; }
   .d { font-family:'Press Start 2P',monospace; }
   h2 { font-weight:400; margin:0; }
   .bar { display:flex; justify-content:space-between; align-items:center; padding:14px 0 16px; }
-  .eyebrow { font-size:12px; color:var(--pos); margin:24px 0 8px; }
+  .eyebrow { font-size:12px; color:var(--hi); margin:24px 0 8px; }
   button { font-family:'Silkscreen',monospace; font-size:12px; letter-spacing:.5px;
            color:var(--fg); background:var(--bg); border:2px solid var(--fg);
            padding:8px 10px; border-radius:0; cursor:pointer; }
@@ -27,9 +34,9 @@
   button:disabled { opacity:.3; }
   button[aria-pressed="true"] { background:var(--fg); color:var(--bg); }
   .nav { display:flex; align-items:center; gap:8px; }
-  .nav .d { font-size:11px; flex:1; text-align:center; }
+  .nav .d { font-size:11px; flex:1; text-align:center; color:var(--hi); }
   .nav button { min-width:46px; min-height:42px; }
-  .hero { font-size:22px; line-height:1.3; margin-bottom:8px; }
+  .hero { font-size:22px; line-height:1.3; margin-bottom:8px; color:var(--hi); }
   .delta { font-size:13px; margin-bottom:12px; }
   #chart { height:96px; display:flex; align-items:flex-end; gap:2px; }
   #chart div { flex:1; background:var(--pos); border-top:3px solid var(--fg); }
@@ -45,19 +52,33 @@
   .meter i { flex:1; height:14px; background:var(--dim); }
   .meter i.on { background:var(--pos); }
   #gate { padding:56px 0; text-align:center; }
-  #gate p { color:var(--pos); font-size:12px; margin:0 0 20px; }
+  #gate p { color:var(--hi); font-size:12px; margin:0 0 20px; }
   #err { color:var(--neg); font-size:12px; padding:12px 0; }
   .hidden { display:none; }
+  .headrow { display:flex; align-items:flex-end; justify-content:space-between;
+             margin:24px 0 8px; }
+  .tog { width:30px; height:30px; padding:0; line-height:0; flex-shrink:0;
+         border:2px solid var(--dim); background:var(--bg); color:var(--fg); }
+  .tog[aria-pressed="true"] { border-color:var(--hi); color:var(--hi); }
+  .row.on .nm { color:var(--hi); }
+
+  /* ---- fixed bottom tab bar ---- */
+  #tabbar { position:fixed; left:0; right:0; bottom:0; z-index:10;
+            background:var(--bg); border-top:2px solid var(--fg);
+            padding-bottom:env(safe-area-inset-bottom); }
+  #tabbar .inner { max-width:480px; margin:0 auto; display:flex; }
+  #tabbar button { flex:1; border:0; border-radius:0; padding:12px 4px 10px;
+                   color:var(--dim); background:var(--bg); line-height:0; }
+  #tabbar button[aria-pressed="true"] { color:var(--hi); }
+  #tabbar button span { display:inline-block; padding-bottom:6px;
+                        border-bottom:3px solid transparent; }
+  #tabbar button[aria-pressed="true"] span { border-bottom-color:var(--hi); }
+  #tabbar button:active { color:var(--fg); }
 </style>
 </head>
 <body>
 
-<script>
-  const CLIENT_ID = "273512296490-u6kmcdkbhsal94sa2c3nhkiahjftdggr.apps.googleusercontent.com";
-  const API_KEY   = "AIzaSyBK0Tpfyvzv-AK05GpL27oCavuaSe7yv7s";
-  const APP_ID    = "273512296490";
-  const TAB       = "MOBILE";
-</script>
+<script src="config.js"></script>
 
 <div id="gate">
   <p>BUDGET</p>
@@ -68,36 +89,61 @@
 <main id="app" class="hidden">
 
   <div class="bar">
-    <span id="clock" style="font-size:12px"></span>
-    <button id="refresh" style="border:0;padding:4px 8px">RELOAD</button>
+    <span id="stamp" style="font-size:12px"></span>
+    <span style="display:flex;gap:4px">
+      <button id="refresh" style="border:0;padding:4px 6px">RELOAD</button>
+      <button id="signout" style="border:0;padding:4px 6px">EXIT</button>
+    </span>
   </div>
 
-  <h2 class="eyebrow">NET WORTH</h2>
-  <div class="d hero" id="nw">&mdash;</div>
-  <div class="delta" id="nwDelta"></div>
-  <div id="chart"></div>
-  <div class="tabs" id="rangeTabs">
-    <button data-months="0"  aria-pressed="true">ALL</button>
-    <button data-months="60" aria-pressed="false">5 YR</button>
-    <button data-months="12" aria-pressed="false">1 YR</button>
-  </div>
+  <section id="v-worth" class="view">
+    <h2 class="eyebrow">NET WORTH</h2>
+    <div class="d hero" id="nw">&mdash;</div>
+    <div class="delta" id="nwDelta"></div>
+    <div id="chart"></div>
+    <div class="tabs" id="rangeTabs">
+      <button data-months="0"  aria-pressed="true">ALL</button>
+      <button data-months="12" aria-pressed="false">1 YR</button>
+      <button data-months="6"  aria-pressed="false">6 MO</button>
+    </div>
+    <div class="headrow">
+      <h2 class="eyebrow" style="margin-bottom:0">ACCOUNTS</h2>
+      <button id="clearSel" class="tog hidden" aria-label="Show all accounts">
+        <svg viewBox="0 0 8 8" width="12" height="12" shape-rendering="crispEdges"
+             fill="currentColor" aria-hidden="true"><rect x="0" y="3" width="8" height="2"/></svg>
+      </button>
+    </div>
+    <div id="accounts"></div>
+  </section>
 
-  <h2 class="eyebrow">BUDGET</h2>
-  <div class="nav">
-    <button id="prev" aria-label="Previous month">&lt;</button>
-    <span class="d" id="month">&mdash;</span>
-    <button id="next" aria-label="Next month">&gt;</button>
-  </div>
-  <div id="summary" style="margin:12px 0 4px"></div>
-  <div class="tabs" id="groupTabs" style="margin-bottom:6px"></div>
-  <div id="budget"></div>
+  <section id="v-budget" class="view hidden">
+    <h2 class="eyebrow">BUDGET</h2>
+    <div class="nav">
+      <button id="prev" aria-label="Previous month">&lt;</button>
+      <span class="d" id="month">&mdash;</span>
+      <button id="next" aria-label="Next month">&gt;</button>
+    </div>
+    <div id="summary" style="margin:12px 0 4px"></div>
+    <div class="tabs" id="groupTabs" style="margin-bottom:6px"></div>
+    <div id="budget"></div>
+  </section>
 
-  <h2 class="eyebrow">SAVINGS GOALS</h2>
-  <div id="goals"></div>
+  <section id="v-goals" class="view hidden">
+    <h2 class="eyebrow">SAVINGS GOALS</h2>
+    <div id="goals"></div>
+  </section>
 
 </main>
 
 <div id="err"></div>
+
+<nav id="tabbar" class="hidden">
+  <div class="inner">
+    <button data-view="worth"  aria-pressed="true"  aria-label="Net worth"><span><svg viewBox="0 0 8 8" width="24" height="24" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="0" y="5" width="2" height="3"/><rect x="3" y="3" width="2" height="5"/><rect x="6" y="1" width="2" height="7"/></svg></span></button>
+    <button data-view="budget" aria-pressed="false" aria-label="Monthly budget"><span><svg viewBox="0 0 8 8" width="24" height="24" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="1" y="0" width="1" height="1"/><rect x="6" y="0" width="1" height="1"/><rect x="0" y="1" width="8" height="2"/><rect x="0" y="3" width="1" height="5"/><rect x="7" y="3" width="1" height="5"/><rect x="0" y="7" width="8" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="2" y="6"  width="1" height="1"/><rect x="5" y="4" width="1" height="1"/></svg></span></button>
+    <button data-view="goals"  aria-pressed="false" aria-label="Savings goals"><span><svg viewBox="0 0 8 8" width="24" height="24" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true"><rect x="1" y="0" width="1" height="8"/><rect x="2" y="1" width="5" height="1"/><rect x="2" y="2" width="4" height="1"/><rect x="2" y="3" width="5" height="1"/></svg></span></button>
+  </div>
+</nav>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -113,7 +159,11 @@ var cats=[];        // {name, group, col}
 var periods=[];     // {label, goal[], actual[], balance[]}
 var nw=[];          // {label, value}
 var goals=[];       // {name, saved, target}
-var mIdx=0, chartMonths=0, group="Needs";
+var accts=[];       // {name, value} - latest balance per account
+var mIdx=0, chartMonths=0, group="Needs", view="worth";
+var sel=[];         // indices into accts; empty = show combined total
+var cachedAt=0;
+var CACHE_V=3;
 
 function money(n){ return (n<0?"-":"")+"$"+Math.abs(Math.round(n)).toLocaleString(); }
 function num(v){ if(typeof v==="number") return v;
@@ -121,7 +171,67 @@ function num(v){ if(typeof v==="number") return v;
 function cell(row,i){ return (row && row[i]!==undefined) ? row[i] : null; }
 function fail(m){ $("err").textContent=m; }
 
-$("clock").textContent = new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+/* ---------- local cache so the app renders before any sign-in ---------- */
+function cacheKey(){ return "cache:"+CACHE_V+":"+sheetId; }
+
+function saveCache(){
+  try {
+    localStorage.setItem(cacheKey(), JSON.stringify({
+      ts:Date.now(), cats:cats, periods:periods, nw:nw, goals:goals, accts:accts
+    }));
+  } catch(e){ /* quota or private mode - not fatal */ }
+}
+
+function loadCache(){
+  if(!sheetId) return false;
+  try {
+    var raw = localStorage.getItem(cacheKey());
+    if(!raw) return false;
+    var c = JSON.parse(raw);
+    if(!c.periods || !c.periods.length) return false;
+    cats=c.cats; periods=c.periods; nw=c.nw||[]; goals=c.goals||[];
+    accts=c.accts||[]; cachedAt=c.ts||0; sel=[];
+    pickCurrentMonth();
+    return true;
+  } catch(e){ return false; }
+}
+
+function setStamp(){
+  var el=$("stamp");
+  if(!cachedAt){ el.textContent=""; return; }
+  var mins = Math.floor((Date.now()-cachedAt)/60000);
+  el.textContent = mins<1 ? "JUST NOW"
+                 : mins<60 ? mins+"M AGO"
+                 : mins<1440 ? Math.floor(mins/60)+"H AGO"
+                 : Math.floor(mins/1440)+"D AGO";
+  el.style.color = mins>2880 ? "var(--neg)" : "var(--fg)";
+}
+
+function showApp(){
+  $("gate").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("tabbar").classList.remove("hidden");
+  buildGroupTabs();
+  render();
+  setStamp();
+  setView(view);
+}
+
+/* ---------- bottom tab bar ---------- */
+function setView(v){
+  view = v;
+  ["worth","budget","goals"].forEach(function(name){
+    $("v-"+name).classList.toggle("hidden", name!==v);
+  });
+  Array.prototype.forEach.call($("tabbar").querySelectorAll("button"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.view===v));
+  });
+  window.scrollTo(0,0);
+}
+
+Array.prototype.forEach.call(document.querySelectorAll("#tabbar button"), function(b){
+  b.onclick = function(){ setView(b.dataset.view); };
+});
 
 var waiting = setInterval(function(){
   if(!window.google || !window.google.accounts || !window.gapi) return;
@@ -130,13 +240,22 @@ var waiting = setInterval(function(){
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID, scope: SCOPE,
     callback: function(res){
-      if(res.error){ $("signin").disabled=false; fail("Sign-in failed. Tap to retry."); return; }
+      if(res.error){
+        $("signin").disabled=false;
+        fail(periods.length ? "Showing saved data. Tap RELOAD to sign in."
+                            : "Sign-in failed. Tap to retry.");
+        return;
+      }
       token = res.access_token;
+      $("err").textContent="";
       if(sheetId) load(); else showPicker();
     }
   });
   $("signin").disabled=false;
-  if(sheetId) tokenClient.requestAccessToken({prompt:""});
+  if(sheetId){
+    if(loadCache()) showApp();
+    tokenClient.requestAccessToken({prompt:""});
+  }
 }, 100);
 
 $("signin").onclick  = function(){ $("err").textContent=""; tokenClient.requestAccessToken(); };
@@ -172,11 +291,12 @@ async function load(){
     var v = data.valueRanges.map(function(r){ return r.values||[]; });
     parseBudget(v[0]); parseNetWorth(v[1]); parseGoals(v[2]);
     if(!periods.length){ fail("No month rows found on the "+TAB+" tab."); return; }
-    $("gate").classList.add("hidden");
-    $("app").classList.remove("hidden");
-    buildGroupTabs();
-    render();
-  } catch(e){ fail("Network error. Check your connection."); }
+    cachedAt = Date.now();
+    saveCache();
+    showApp();
+  } catch(e){
+    fail(periods.length ? "Offline - showing saved data." : "Network error. Check your connection.");
+  }
 }
 
 /* Section 1: row 1 = group labels (sparse), row 2 = category names,
@@ -203,6 +323,10 @@ function parseBudget(rows){
       balance: cats.map(function(x){ return num(cell(b,x.col)); })
     });
   }
+  pickCurrentMonth();
+}
+
+function pickCurrentMonth(){
   mIdx = periods.length - 1;
   var now = new Date(), y = now.getFullYear(), m = now.getMonth();
   for(var i=0;i<periods.length;i++){
@@ -215,11 +339,29 @@ function parseBudget(rows){
 function parseNetWorth(rows){
   var head = rows[0]||[], tot = head.length-1;
   for(var i=0;i<head.length;i++) if(String(head[i]).trim().toLowerCase()==="total") tot=i;
+  /* Columns between the date and the Total are the individual accounts. */
+  accts = []; sel = [];
+  var cols = [];
+  for(var c=1;c<tot;c++){
+    var nm = cell(head,c);
+    if(!nm) continue;
+    cols.push(c);
+    accts.push({ name:String(nm).trim(), value:0 });
+  }
   nw = [];
   for(var r=1;r<rows.length;r++){
     var row = rows[r];
     if(!row || cell(row,0)==null || cell(row,tot)==null) continue;
-    nw.push({ label:String(cell(row,0)), value:num(cell(row,tot)) });
+    nw.push({
+      label: String(cell(row,0)),
+      value: num(cell(row,tot)),
+      vals:  cols.map(function(c){ return num(cell(row,c)); })
+    });
+  }
+  /* Current balances come from the most recent row. */
+  if(nw.length){
+    var lastVals = nw[nw.length-1].vals;
+    accts.forEach(function(a,i){ a.value = lastVals[i]; });
   }
 }
 
@@ -248,23 +390,72 @@ function buildGroupTabs(){
   });
 }
 
-function render(){ renderNetWorth(); renderBudget(); renderGoals(); }
+function render(){ renderNetWorth(); renderAccounts(); renderBudget(); renderGoals(); }
+
+var PLUS  = '<svg viewBox="0 0 8 8" width="12" height="12" shape-rendering="crispEdges" '
+          + 'fill="currentColor" aria-hidden="true">'
+          + '<rect x="3" y="0" width="2" height="8"/><rect x="0" y="3" width="8" height="2"/></svg>';
+var MINUS = '<svg viewBox="0 0 8 8" width="12" height="12" shape-rendering="crispEdges" '
+          + 'fill="currentColor" aria-hidden="true"><rect x="0" y="3" width="8" height="2"/></svg>';
+
+function renderAccounts(){
+  $("clearSel").classList.toggle("hidden", sel.length===0);
+  if(!accts.length){ $("accounts").innerHTML =
+      '<div class="row"><span class="nm">No account columns found</span></div>'; return; }
+  var asOf = nw.length ? nw[nw.length-1].label : "";
+  $("accounts").innerHTML = accts.map(function(a,i){
+    var on = sel.indexOf(i) >= 0;
+    return '<div class="row'+(on?" on":"")+'">'
+         + '<span class="nm">'+a.name.toUpperCase()+'</span>'
+         + '<span class="amt" style="color:'+(a.value<0?"var(--neg)":"var(--fg)")+'">'
+         + money(a.value)+'</span>'
+         + '<button class="tog" data-i="'+i+'" aria-pressed="'+on+'" aria-label="'
+         + (on?"Remove ":"Add ")+a.name+' from chart">'+(on?MINUS:PLUS)+'</button>'
+         + '</div>';
+  }).join("")
+  + (asOf ? '<div class="sum" style="opacity:.7"><span>AS OF</span><span>'+asOf+'</span></div>' : "");
+}
+
+/* Delegated so the handler survives every re-render. */
+$("accounts").onclick = function(e){
+  var b = e.target.closest ? e.target.closest(".tog") : null;
+  if(!b) return;
+  var i = parseInt(b.dataset.i,10), at = sel.indexOf(i);
+  if(at >= 0) sel.splice(at,1); else sel.push(i);
+  renderAccounts(); renderNetWorth();
+};
+
+$("clearSel").onclick = function(){
+  sel = [];
+  renderAccounts(); renderNetWorth();
+};
+
+/* Value of one history row under the current account selection.
+   No selection means the sheet's own Total column. */
+function seriesVal(p){
+  if(!sel.length) return p.value;
+  if(!p.vals) return 0;
+  var t=0;
+  for(var i=0;i<sel.length;i++) t += (p.vals[sel[i]]||0);
+  return t;
+}
 
 function renderNetWorth(){
   var s = chartMonths ? nw.slice(-chartMonths) : nw;
   if(!s.length){ $("nw").textContent="No data"; $("nwDelta").textContent=""; $("chart").innerHTML=""; return; }
-  var last = s[s.length-1].value, diff = last - s[0].value;
-  var pct = s[0].value ? (diff/Math.abs(s[0].value))*100 : 0;
+  var last = seriesVal(s[s.length-1]), diff = last - seriesVal(s[0]);
+  var first = seriesVal(s[0]);
+  var pct = first ? (diff/Math.abs(first))*100 : 0;
   $("nw").textContent = money(last);
   $("nwDelta").textContent = (diff>=0?"\u25B2 +":"\u25BC -") + "$"
     + Math.abs(Math.round(diff)).toLocaleString() + "  (" + Math.abs(pct).toFixed(1) + "%)";
   $("nwDelta").style.color = diff>=0 ? "var(--pos)" : "var(--neg)";
-  var vals = s.map(function(p){ return p.value; });
+  var vals = s.map(seriesVal);
   var lo = Math.min.apply(null,vals), hi = Math.max.apply(null,vals), span = (hi-lo)||1;
   $("chart").innerHTML = "";
   s.forEach(function(p){
     var d = document.createElement("div");
-    d.style.height = Math.round((15 + ((p.value-lo)/span)*85)/8)*8 + "%";
+    d.style.height = Math.round((15 + ((seriesVal(p)-lo)/span)*85)/8)*8 + "%";
     $("chart").appendChild(d);
   });
 }
@@ -298,10 +489,17 @@ function renderGoals(){
     var on = Math.round(pct*10), meter="";
     for(var i=0;i<10;i++) meter += '<i class="'+(i<on?"on":"")+'"></i>';
     return '<div class="goal"><div class="top"><span>'+g.name.toUpperCase()
-         + '</span><span style="color:var(--pos)">'+Math.round(pct*100)+'%</span></div>'
+         + '</span><span style="color:var(--hi)">'+Math.round(pct*100)+'%</span></div>'
          + '<div class="meter">'+meter+'</div></div>';
   }).join("");
 }
+
+$("signout").onclick = function(){
+  if(sheetId) localStorage.removeItem(cacheKey());
+  localStorage.removeItem("sheetId");
+  if(token && google.accounts.oauth2.revoke) google.accounts.oauth2.revoke(token, function(){});
+  location.reload();
+};
 
 $("prev").onclick = function(){ if(mIdx>0){ mIdx--; renderBudget(); } };
 $("next").onclick = function(){ if(mIdx<periods.length-1){ mIdx++; renderBudget(); } };
