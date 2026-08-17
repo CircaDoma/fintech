@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Budget</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:  #0B0B12;
+    --fg:  #FCFCFC;
+    --pos: #00B84C;
+    --neg: #F83800;
+    --dim: #2A2A38;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: 'Silkscreen', monospace;
+    font-size: 13px;
+    letter-spacing: .5px;
+    padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 24px);
+    max-width: 480px;
+    margin: 0 auto;
+    image-rendering: pixelated;
+  }
+  .d { font-family: 'Press Start 2P', monospace; }
+  h1, h2 { font-weight: 400; margin: 0; }
+
+  .bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 18px; }
+  .eyebrow { font-size: 12px; color: var(--pos); margin: 22px 0 8px; }
+
+  button {
+    font-family: 'Silkscreen', monospace; font-size: 12px; letter-spacing: .5px;
+    color: var(--fg); background: var(--bg); border: 2px solid var(--fg);
+    padding: 8px 12px; border-radius: 0; cursor: pointer;
+  }
+  button:active { background: var(--fg); color: var(--bg); }
+  button:disabled { opacity: .35; }
+  button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+
+  .nav { display: flex; align-items: center; gap: 8px; }
+  .nav .d { font-size: 11px; flex: 1; text-align: center; }
+  .nav button { min-width: 44px; min-height: 40px; }
+
+  .hero { font-size: 24px; line-height: 1.25; margin-bottom: 8px; }
+  .delta { font-size: 13px; margin-bottom: 12px; }
+
+  #chart { height: 104px; display: flex; align-items: flex-end; gap: 2px; }
+  #chart div { flex: 1; background: var(--pos); border-top: 3px solid var(--fg); }
+
+  .tabs { display: flex; gap: 4px; margin-top: 10px; }
+  .tabs button { flex: 1; }
+
+  .row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 2px solid var(--dim); }
+  .row span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .amt { font-size: 14px; }
+
+  .goal { margin-bottom: 14px; }
+  .goal .top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .meter { display: flex; gap: 2px; }
+  .meter i { width: 12px; height: 14px; background: var(--dim); }
+  .meter i.on { background: var(--pos); }
+
+  #gate { padding: 60px 0; text-align: center; }
+  #gate p { color: var(--pos); font-size: 12px; margin: 0 0 20px; }
+  #err { color: var(--neg); font-size: 12px; padding: 12px 0; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<script>
+  const CLIENT_ID = "273512296490-u6kmcdkbhsal94sa2c3nhkiahjftdggr.apps.googleusercontent.com";   // ends in .apps.googleusercontent.com
+  const API_KEY   = "AIzaSyBK0Tpfyvzv-AK05GpL27oCavuaSe7yv7s";     // used only by the file picker
+  const APP_ID    = "273512296490";   // the numeric project number
+  const TAB       = "MOBILE";
+</script>
+
+<div id="gate">
+  <p>Budget</p>
+  <button id="signin" disabled>Sign in with Google</button>
+  <button id="pick" class="hidden">Choose your sheet</button>
+</div>
+
+<main id="app" class="hidden">
+
+  <div class="bar">
+    <span id="clock" style="font-size:12px"></span>
+    <button id="refresh" style="border:0;padding:4px 8px">RELOAD</button>
+  </div>
+
+  <h2 class="eyebrow">NET WORTH</h2>
+  <div class="d hero" id="nw">&mdash;</div>
+  <div class="delta" id="nwDelta"></div>
+  <div id="chart"></div>
+  <div class="tabs">
+    <button data-months="0"  aria-pressed="true">ALL</button>
+    <button data-months="60" aria-pressed="false">5 YR</button>
+    <button data-months="12" aria-pressed="false">1 YR</button>
+  </div>
+
+  <h2 class="eyebrow">BUDGET LEFT</h2>
+  <div class="nav">
+    <button id="prev" aria-label="Previous month">&lt;</button>
+    <span class="d" id="month">&mdash;</span>
+    <button id="next" aria-label="Next month">&gt;</button>
+  </div>
+  <div id="budget" style="margin-top:10px"></div>
+
+  <h2 class="eyebrow">SAVINGS GOALS</h2>
+  <div id="goals"></div>
+
+</main>
+
+<div id="err"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+
+<script>
+const SCOPE = "https://www.googleapis.com/auth/drive.file";
+const $ = id => document.getElementById(id);
+
+let token = null;
+let tokenClient = null;
+let sheetId = localStorage.getItem("sheetId");
+
+let rows = [], history = [], goals = [], months = [];
+let monthIndex = 0, chartMonths = 0;
+
+const money = n => (n < 0 ? "-" : "") + "$" + Math.abs(Math.round(n)).toLocaleString();
+const fail = m => { $("err").textContent = m; };
+
+$("clock").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+const waiting = setInterval(() => {
+  if (!window.google || !window.google.accounts || !window.gapi) return;
+  clearInterval(waiting);
+  gapi.load("picker", () => {});
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    callback: res => {
+      if (res.error) { $("signin").disabled = false; fail("Sign-in failed. Tap to retry."); return; }
+      token = res.access_token;
+      if (sheetId) { load(); } else { showPicker(); }
+    }
+  });
+
+  $("signin").disabled = false;
+  if (sheetId) tokenClient.requestAccessToken({ prompt: "" });
+}, 100);
+
+$("signin").onclick  = () => { $("err").textContent = ""; tokenClient.requestAccessToken(); };
+$("pick").onclick    = () => showPicker();
+$("refresh").onclick = () => token ? load() : tokenClient.requestAccessToken({ prompt: "" });
+
+function showPicker() {
+  $("pick").classList.remove("hidden");
+  new google.picker.PickerBuilder()
+    .setAppId(APP_ID)
+    .setOAuthToken(token)
+    .setDeveloperKey(API_KEY)
+    .addView(new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS))
+    .setCallback(d => {
+      if (d.action !== google.picker.Action.PICKED) return;
+      sheetId = d.docs[0].id;
+      localStorage.setItem("sheetId", sheetId);
+      load();
+    })
+    .build().setVisible(true);
+}
+
+async function load() {
+  $("err").textContent = "";
+  const url = "https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "/values:batchGet"
+    + "?ranges=" + encodeURIComponent(TAB + "!A2:E")
+    + "&ranges=" + encodeURIComponent(TAB + "!G2:H")
+    + "&ranges=" + encodeURIComponent(TAB + "!J2:L")
+    + "&valueRenderOption=UNFORMATTED_VALUE"
+    + "&dateTimeRenderOption=FORMATTED_STRING";
+
+  try {
+    const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
+    const data = await res.json();
+
+    if (res.status === 401) { token = null; tokenClient.requestAccessToken({ prompt: "" }); return; }
+    if (!res.ok) { fail("Sheet error: " + ((data.error && data.error.message) || res.status)); return; }
+
+    const parts = data.valueRanges.map(v => v.values || []);
+    const num = v => typeof v === "number" ? v : parseFloat(String(v).replace(/[^0-9.-]/g, "")) || 0;
+
+    rows = parts[0].filter(r => r[0] && r[2]).map(r => ({
+      month: String(r[0]).trim(),
+      type: String(r[1] || "Expense").trim().toLowerCase(),
+      category: String(r[2]).trim(),
+      goal: num(r[3]),
+      actual: num(r[4])
+    }));
+    history = parts[1].filter(r => r[0]).map(r => ({ date: String(r[0]), value: num(r[1]) }));
+    goals   = parts[2].filter(r => r[0]).map(r => ({ name: String(r[0]), current: num(r[1]), target: num(r[2]) }));
+
+    months = Array.from(new Set(rows.map(r => r.month))).sort();
+    if (!months.length) { fail("No budget rows found on the " + TAB + " tab."); return; }
+
+    const now = new Date().toISOString().slice(0, 7);
+    monthIndex = months.indexOf(now) >= 0 ? months.indexOf(now) : months.length - 1;
+
+    $("gate").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    render();
+  } catch (e) {
+    fail("Network error. Check your connection.");
+  }
+}
+
+function render() { renderNetWorth(); renderBudget(); renderGoals(); }
+
+function renderNetWorth() {
+  const slice = chartMonths ? history.slice(-chartMonths) : history;
+  if (!slice.length) { $("nw").textContent = "No data"; $("nwDelta").textContent = ""; return; }
+
+  const last = slice[slice.length - 1].value;
+  const diff = last - slice[0].value;
+  const pct = slice[0].value ? (diff / Math.abs(slice[0].value)) * 100 : 0;
+
+  $("nw").textContent = money(last);
+  $("nwDelta").textContent = (diff >= 0 ? "\u25B2 +" : "\u25BC -") + "$"
+    + Math.abs(Math.round(diff)).toLocaleString() + "  (" + Math.abs(pct).toFixed(2) + "%)";
+  $("nwDelta").style.color = diff >= 0 ? "var(--pos)" : "var(--neg)";
+
+  const vals = slice.map(p => p.value);
+  const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  const span = (hi - lo) || 1;
+  $("chart").innerHTML = "";
+  slice.forEach(p => {
+    const d = document.createElement("div");
+    d.style.height = Math.round((15 + ((p.value - lo) / span) * 85) / 8) * 8 + "%";
+    $("chart").appendChild(d);
+  });
+}
+
+function renderBudget() {
+  const m = months[monthIndex];
+  $("month").textContent = m;
+  $("prev").disabled = monthIndex === 0;
+  $("next").disabled = monthIndex === months.length - 1;
+
+  const list = rows.filter(r => r.month === m && r.type !== "income");
+  $("budget").innerHTML = list.map(r => {
+    const bal = r.type === "savings" ? r.actual - r.goal : r.goal + r.actual;
+    const col = bal < 0 ? "var(--neg)" : "var(--fg)";
+    return '<div class="row"><span>' + r.category.toUpperCase()
+         + '</span><span class="amt" style="color:' + col + '">' + money(bal) + '</span></div>';
+  }).join("") || '<div class="row"><span>No rows for ' + m + '</span></div>';
+}
+
+function renderGoals() {
+  $("goals").innerHTML = goals.map(g => {
+    const pct = g.target > 0 ? Math.min(1, g.current / g.target) : 0;
+    const on = Math.round(pct * 10);
+    let meter = "";
+    for (let i = 0; i < 10; i++) meter += '<i class="' + (i < on ? "on" : "") + '"></i>';
+    return '<div class="goal"><div class="top"><span>' + g.name.toUpperCase()
+         + '</span><span style="color:var(--pos)">' + Math.round(pct * 100) + '%</span></div>'
+         + '<div class="meter">' + meter + '</div></div>';
+  }).join("");
+}
+
+$("prev").onclick = () => { if (monthIndex > 0) { monthIndex--; renderBudget(); } };
+$("next").onclick = () => { if (monthIndex < months.length - 1) { monthIndex++; renderBudget(); } };
+
+Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), btn => {
+  btn.onclick = () => {
+    Array.prototype.forEach.call(document.querySelectorAll(".tabs button"),
+      b => b.setAttribute("aria-pressed", "false"));
+    btn.setAttribute("aria-pressed", "true");
+    chartMonths = parseInt(btn.dataset.months, 10);
+    renderNetWorth();
+  };
+});
+</script>
+
+</body>
+</html>
