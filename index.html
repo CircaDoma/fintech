@@ -10,79 +10,57 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:  #0B0B12;
-    --fg:  #FCFCFC;
-    --pos: #00B84C;
-    --neg: #F83800;
-    --dim: #2A2A38;
-  }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; background: var(--bg); color: var(--fg); }
-  body {
-    font-family: 'Silkscreen', monospace;
-    font-size: 13px;
-    letter-spacing: .5px;
-    padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 24px);
-    max-width: 480px;
-    margin: 0 auto;
-    image-rendering: pixelated;
-  }
-  .d { font-family: 'Press Start 2P', monospace; }
-  h1, h2 { font-weight: 400; margin: 0; }
-
-  .bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 18px; }
-  .eyebrow { font-size: 12px; color: var(--pos); margin: 22px 0 8px; }
-
-  button {
-    font-family: 'Silkscreen', monospace; font-size: 12px; letter-spacing: .5px;
-    color: var(--fg); background: var(--bg); border: 2px solid var(--fg);
-    padding: 8px 12px; border-radius: 0; cursor: pointer;
-  }
-  button:active { background: var(--fg); color: var(--bg); }
-  button:disabled { opacity: .35; }
-  button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
-
-  .nav { display: flex; align-items: center; gap: 8px; }
-  .nav .d { font-size: 11px; flex: 1; text-align: center; }
-  .nav button { min-width: 44px; min-height: 40px; }
-
-  .hero { font-size: 24px; line-height: 1.25; margin-bottom: 8px; }
-  .delta { font-size: 13px; margin-bottom: 12px; }
-
-  #chart { height: 104px; display: flex; align-items: flex-end; gap: 2px; }
-  #chart div { flex: 1; background: var(--pos); border-top: 3px solid var(--fg); }
-
-  .tabs { display: flex; gap: 4px; margin-top: 10px; }
-  .tabs button { flex: 1; }
-
-  .row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 2px solid var(--dim); }
-  .row span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .amt { font-size: 14px; }
-
-  .goal { margin-bottom: 14px; }
-  .goal .top { display: flex; justify-content: space-between; margin-bottom: 5px; }
-  .meter { display: flex; gap: 2px; }
-  .meter i { width: 12px; height: 14px; background: var(--dim); }
-  .meter i.on { background: var(--pos); }
-
-  #gate { padding: 60px 0; text-align: center; }
-  #gate p { color: var(--pos); font-size: 12px; margin: 0 0 20px; }
-  #err { color: var(--neg); font-size: 12px; padding: 12px 0; }
-  .hidden { display: none; }
+  :root { --bg:#0B0B12; --fg:#FCFCFC; --pos:#00B84C; --neg:#F83800; --dim:#2A2A38; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; background:var(--bg); color:var(--fg); }
+  body { font-family:'Silkscreen',monospace; font-size:13px; letter-spacing:.5px;
+         padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 32px);
+         max-width:480px; margin:0 auto; image-rendering:pixelated; }
+  .d { font-family:'Press Start 2P',monospace; }
+  h2 { font-weight:400; margin:0; }
+  .bar { display:flex; justify-content:space-between; align-items:center; padding:14px 0 16px; }
+  .eyebrow { font-size:12px; color:var(--pos); margin:24px 0 8px; }
+  button { font-family:'Silkscreen',monospace; font-size:12px; letter-spacing:.5px;
+           color:var(--fg); background:var(--bg); border:2px solid var(--fg);
+           padding:8px 10px; border-radius:0; cursor:pointer; }
+  button:active { background:var(--fg); color:var(--bg); }
+  button:disabled { opacity:.3; }
+  button[aria-pressed="true"] { background:var(--fg); color:var(--bg); }
+  .nav { display:flex; align-items:center; gap:8px; }
+  .nav .d { font-size:11px; flex:1; text-align:center; }
+  .nav button { min-width:46px; min-height:42px; }
+  .hero { font-size:22px; line-height:1.3; margin-bottom:8px; }
+  .delta { font-size:13px; margin-bottom:12px; }
+  #chart { height:96px; display:flex; align-items:flex-end; gap:2px; }
+  #chart div { flex:1; background:var(--pos); border-top:3px solid var(--fg); }
+  .tabs { display:flex; gap:4px; margin-top:10px; }
+  .tabs button { flex:1; }
+  .row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:2px solid var(--dim); }
+  .row .nm { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row .amt { font-size:14px; }
+  .sum { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; }
+  .goal { margin-bottom:14px; }
+  .goal .top { display:flex; justify-content:space-between; margin-bottom:5px; }
+  .meter { display:flex; gap:2px; }
+  .meter i { flex:1; height:14px; background:var(--dim); }
+  .meter i.on { background:var(--pos); }
+  #gate { padding:56px 0; text-align:center; }
+  #gate p { color:var(--pos); font-size:12px; margin:0 0 20px; }
+  #err { color:var(--neg); font-size:12px; padding:12px 0; }
+  .hidden { display:none; }
 </style>
 </head>
 <body>
 
 <script>
-  const CLIENT_ID = "273512296490-u6kmcdkbhsal94sa2c3nhkiahjftdggr.apps.googleusercontent.com";   // ends in .apps.googleusercontent.com
-  const API_KEY   = "AIzaSyBK0Tpfyvzv-AK05GpL27oCavuaSe7yv7s";     // used only by the file picker
-  const APP_ID    = "273512296490";   // the numeric project number
+  const CLIENT_ID = "273512296490-u6kmcdkbhsal94sa2c3nhkiahjftdggr.apps.googleusercontent.com";
+  const API_KEY   = "AIzaSyBK0Tpfyvzv-AK05GpL27oCavuaSe7yv7s";
+  const APP_ID    = "273512296490";
   const TAB       = "MOBILE";
 </script>
 
 <div id="gate">
-  <p>Budget</p>
+  <p>BUDGET</p>
   <button id="signin" disabled>Sign in with Google</button>
   <button id="pick" class="hidden">Choose your sheet</button>
 </div>
@@ -98,19 +76,21 @@
   <div class="d hero" id="nw">&mdash;</div>
   <div class="delta" id="nwDelta"></div>
   <div id="chart"></div>
-  <div class="tabs">
+  <div class="tabs" id="rangeTabs">
     <button data-months="0"  aria-pressed="true">ALL</button>
     <button data-months="60" aria-pressed="false">5 YR</button>
     <button data-months="12" aria-pressed="false">1 YR</button>
   </div>
 
-  <h2 class="eyebrow">BUDGET LEFT</h2>
+  <h2 class="eyebrow">BUDGET</h2>
   <div class="nav">
     <button id="prev" aria-label="Previous month">&lt;</button>
     <span class="d" id="month">&mdash;</span>
     <button id="next" aria-label="Next month">&gt;</button>
   </div>
-  <div id="budget" style="margin-top:10px"></div>
+  <div id="summary" style="margin:12px 0 4px"></div>
+  <div class="tabs" id="groupTabs" style="margin-bottom:6px"></div>
+  <div id="budget"></div>
 
   <h2 class="eyebrow">SAVINGS GOALS</h2>
   <div id="goals"></div>
@@ -123,165 +103,214 @@
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
 <script>
-const SCOPE = "https://www.googleapis.com/auth/drive.file";
-const $ = id => document.getElementById(id);
+var SCOPE = "https://www.googleapis.com/auth/drive.file";
+function $(id){ return document.getElementById(id); }
 
-let token = null;
-let tokenClient = null;
-let sheetId = localStorage.getItem("sheetId");
+var token=null, tokenClient=null;
+var sheetId = localStorage.getItem("sheetId");
 
-let rows = [], history = [], goals = [], months = [];
-let monthIndex = 0, chartMonths = 0;
+var cats=[];        // {name, group, col}
+var periods=[];     // {label, goal[], actual[], balance[]}
+var nw=[];          // {label, value}
+var goals=[];       // {name, saved, target}
+var mIdx=0, chartMonths=0, group="Needs";
 
-const money = n => (n < 0 ? "-" : "") + "$" + Math.abs(Math.round(n)).toLocaleString();
-const fail = m => { $("err").textContent = m; };
+function money(n){ return (n<0?"-":"")+"$"+Math.abs(Math.round(n)).toLocaleString(); }
+function num(v){ if(typeof v==="number") return v;
+  var p=parseFloat(String(v==null?"":v).replace(/[^0-9.-]/g,"")); return isNaN(p)?0:p; }
+function cell(row,i){ return (row && row[i]!==undefined) ? row[i] : null; }
+function fail(m){ $("err").textContent=m; }
 
-$("clock").textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+$("clock").textContent = new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
 
-const waiting = setInterval(() => {
-  if (!window.google || !window.google.accounts || !window.gapi) return;
+var waiting = setInterval(function(){
+  if(!window.google || !window.google.accounts || !window.gapi) return;
   clearInterval(waiting);
-  gapi.load("picker", () => {});
-
+  gapi.load("picker", function(){});
   tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPE,
-    callback: res => {
-      if (res.error) { $("signin").disabled = false; fail("Sign-in failed. Tap to retry."); return; }
+    client_id: CLIENT_ID, scope: SCOPE,
+    callback: function(res){
+      if(res.error){ $("signin").disabled=false; fail("Sign-in failed. Tap to retry."); return; }
       token = res.access_token;
-      if (sheetId) { load(); } else { showPicker(); }
+      if(sheetId) load(); else showPicker();
     }
   });
-
-  $("signin").disabled = false;
-  if (sheetId) tokenClient.requestAccessToken({ prompt: "" });
+  $("signin").disabled=false;
+  if(sheetId) tokenClient.requestAccessToken({prompt:""});
 }, 100);
 
-$("signin").onclick  = () => { $("err").textContent = ""; tokenClient.requestAccessToken(); };
-$("pick").onclick    = () => showPicker();
-$("refresh").onclick = () => token ? load() : tokenClient.requestAccessToken({ prompt: "" });
+$("signin").onclick  = function(){ $("err").textContent=""; tokenClient.requestAccessToken(); };
+$("pick").onclick    = function(){ showPicker(); };
+$("refresh").onclick = function(){ token ? load() : tokenClient.requestAccessToken({prompt:""}); };
 
-function showPicker() {
+function showPicker(){
   $("pick").classList.remove("hidden");
   new google.picker.PickerBuilder()
-    .setAppId(APP_ID)
-    .setOAuthToken(token)
-    .setDeveloperKey(API_KEY)
+    .setAppId(APP_ID).setOAuthToken(token).setDeveloperKey(API_KEY)
     .addView(new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS))
-    .setCallback(d => {
-      if (d.action !== google.picker.Action.PICKED) return;
+    .setCallback(function(d){
+      if(d.action !== google.picker.Action.PICKED) return;
       sheetId = d.docs[0].id;
       localStorage.setItem("sheetId", sheetId);
       load();
-    })
-    .build().setVisible(true);
+    }).build().setVisible(true);
 }
 
-async function load() {
-  $("err").textContent = "";
-  const url = "https://sheets.googleapis.com/v4/spreadsheets/" + sheetId + "/values:batchGet"
-    + "?ranges=" + encodeURIComponent(TAB + "!A2:E")
-    + "&ranges=" + encodeURIComponent(TAB + "!G2:H")
-    + "&ranges=" + encodeURIComponent(TAB + "!J2:L")
+async function load(){
+  $("err").textContent="";
+  var url = "https://sheets.googleapis.com/v4/spreadsheets/"+sheetId+"/values:batchGet"
+    + "?ranges=" + encodeURIComponent(TAB+"!A1:AF")
+    + "&ranges=" + encodeURIComponent(TAB+"!AH1:AY")
+    + "&ranges=" + encodeURIComponent(TAB+"!AZ1:BC")
     + "&valueRenderOption=UNFORMATTED_VALUE"
     + "&dateTimeRenderOption=FORMATTED_STRING";
-
   try {
-    const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
-    const data = await res.json();
-
-    if (res.status === 401) { token = null; tokenClient.requestAccessToken({ prompt: "" }); return; }
-    if (!res.ok) { fail("Sheet error: " + ((data.error && data.error.message) || res.status)); return; }
-
-    const parts = data.valueRanges.map(v => v.values || []);
-    const num = v => typeof v === "number" ? v : parseFloat(String(v).replace(/[^0-9.-]/g, "")) || 0;
-
-    rows = parts[0].filter(r => r[0] && r[2]).map(r => ({
-      month: String(r[0]).trim(),
-      type: String(r[1] || "Expense").trim().toLowerCase(),
-      category: String(r[2]).trim(),
-      goal: num(r[3]),
-      actual: num(r[4])
-    }));
-    history = parts[1].filter(r => r[0]).map(r => ({ date: String(r[0]), value: num(r[1]) }));
-    goals   = parts[2].filter(r => r[0]).map(r => ({ name: String(r[0]), current: num(r[1]), target: num(r[2]) }));
-
-    months = Array.from(new Set(rows.map(r => r.month))).sort();
-    if (!months.length) { fail("No budget rows found on the " + TAB + " tab."); return; }
-
-    const now = new Date().toISOString().slice(0, 7);
-    monthIndex = months.indexOf(now) >= 0 ? months.indexOf(now) : months.length - 1;
-
+    var res = await fetch(url,{headers:{Authorization:"Bearer "+token}});
+    var data = await res.json();
+    if(res.status===401){ token=null; tokenClient.requestAccessToken({prompt:""}); return; }
+    if(!res.ok){ fail("Sheet error: "+((data.error&&data.error.message)||res.status)); return; }
+    var v = data.valueRanges.map(function(r){ return r.values||[]; });
+    parseBudget(v[0]); parseNetWorth(v[1]); parseGoals(v[2]);
+    if(!periods.length){ fail("No month rows found on the "+TAB+" tab."); return; }
     $("gate").classList.add("hidden");
     $("app").classList.remove("hidden");
+    buildGroupTabs();
     render();
-  } catch (e) {
-    fail("Network error. Check your connection.");
+  } catch(e){ fail("Network error. Check your connection."); }
+}
+
+/* Section 1: row 1 = group labels (sparse), row 2 = category names,
+   then repeating triplets of Goal / Actual / Balance with the month in column A. */
+function parseBudget(rows){
+  var groupRow = rows[0]||[], nameRow = rows[1]||[];
+  cats = [];
+  var current = "";
+  for(var c=2; c<=31; c++){
+    if(cell(groupRow,c)) current = String(cell(groupRow,c)).trim();
+    var nm = cell(nameRow,c);
+    if(nm) cats.push({ name:String(nm).trim(), group:current, col:c });
+  }
+  periods = [];
+  for(var r=2; r+2<rows.length || r<rows.length; r+=3){
+    var g=rows[r], a=rows[r+1], b=rows[r+2];
+    if(!g) break;
+    var label = cell(g,0);
+    if(!label && !cell(g,2)) continue;
+    periods.push({
+      label: label ? String(label).trim() : "Month "+(periods.length+1),
+      goal:    cats.map(function(x){ return num(cell(g,x.col)); }),
+      actual:  cats.map(function(x){ return num(cell(a,x.col)); }),
+      balance: cats.map(function(x){ return num(cell(b,x.col)); })
+    });
+  }
+  mIdx = periods.length - 1;
+  var now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  for(var i=0;i<periods.length;i++){
+    var d = new Date(periods[i].label);
+    if(!isNaN(d) && d.getFullYear()===y && d.getMonth()===m){ mIdx=i; break; }
   }
 }
 
-function render() { renderNetWorth(); renderBudget(); renderGoals(); }
+/* Section 2: row 1 headers (first col = date, last col = Total). */
+function parseNetWorth(rows){
+  var head = rows[0]||[], tot = head.length-1;
+  for(var i=0;i<head.length;i++) if(String(head[i]).trim().toLowerCase()==="total") tot=i;
+  nw = [];
+  for(var r=1;r<rows.length;r++){
+    var row = rows[r];
+    if(!row || cell(row,0)==null || cell(row,tot)==null) continue;
+    nw.push({ label:String(cell(row,0)), value:num(cell(row,tot)) });
+  }
+}
 
-function renderNetWorth() {
-  const slice = chartMonths ? history.slice(-chartMonths) : history;
-  if (!slice.length) { $("nw").textContent = "No data"; $("nwDelta").textContent = ""; return; }
+/* Section 3: Category / Saved / Remainder / Goal, ending before any total row. */
+function parseGoals(rows){
+  goals = [];
+  for(var r=1;r<rows.length;r++){
+    var row = rows[r];
+    var nm = cell(row,0);
+    if(!nm) continue;
+    var s = String(nm).trim();
+    if(/^total/i.test(s)) break;
+    goals.push({ name:s, saved:num(cell(row,1)), target:num(cell(row,3)) });
+  }
+}
 
-  const last = slice[slice.length - 1].value;
-  const diff = last - slice[0].value;
-  const pct = slice[0].value ? (diff / Math.abs(slice[0].value)) * 100 : 0;
+function buildGroupTabs(){
+  var seen = [];
+  cats.forEach(function(c){ if(c.group!=="Summary" && seen.indexOf(c.group)<0) seen.push(c.group); });
+  if(seen.indexOf(group)<0) group = seen[0];
+  $("groupTabs").innerHTML = seen.map(function(g){
+    return '<button data-group="'+g+'" aria-pressed="'+(g===group)+'">'+g.toUpperCase()+'</button>';
+  }).join("");
+  Array.prototype.forEach.call($("groupTabs").children, function(b){
+    b.onclick = function(){ group = b.dataset.group; buildGroupTabs(); renderBudget(); };
+  });
+}
 
+function render(){ renderNetWorth(); renderBudget(); renderGoals(); }
+
+function renderNetWorth(){
+  var s = chartMonths ? nw.slice(-chartMonths) : nw;
+  if(!s.length){ $("nw").textContent="No data"; $("nwDelta").textContent=""; $("chart").innerHTML=""; return; }
+  var last = s[s.length-1].value, diff = last - s[0].value;
+  var pct = s[0].value ? (diff/Math.abs(s[0].value))*100 : 0;
   $("nw").textContent = money(last);
-  $("nwDelta").textContent = (diff >= 0 ? "\u25B2 +" : "\u25BC -") + "$"
-    + Math.abs(Math.round(diff)).toLocaleString() + "  (" + Math.abs(pct).toFixed(2) + "%)";
-  $("nwDelta").style.color = diff >= 0 ? "var(--pos)" : "var(--neg)";
-
-  const vals = slice.map(p => p.value);
-  const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-  const span = (hi - lo) || 1;
+  $("nwDelta").textContent = (diff>=0?"\u25B2 +":"\u25BC -") + "$"
+    + Math.abs(Math.round(diff)).toLocaleString() + "  (" + Math.abs(pct).toFixed(1) + "%)";
+  $("nwDelta").style.color = diff>=0 ? "var(--pos)" : "var(--neg)";
+  var vals = s.map(function(p){ return p.value; });
+  var lo = Math.min.apply(null,vals), hi = Math.max.apply(null,vals), span = (hi-lo)||1;
   $("chart").innerHTML = "";
-  slice.forEach(p => {
-    const d = document.createElement("div");
-    d.style.height = Math.round((15 + ((p.value - lo) / span) * 85) / 8) * 8 + "%";
+  s.forEach(function(p){
+    var d = document.createElement("div");
+    d.style.height = Math.round((15 + ((p.value-lo)/span)*85)/8)*8 + "%";
     $("chart").appendChild(d);
   });
 }
 
-function renderBudget() {
-  const m = months[monthIndex];
-  $("month").textContent = m;
-  $("prev").disabled = monthIndex === 0;
-  $("next").disabled = monthIndex === months.length - 1;
+function renderBudget(){
+  var p = periods[mIdx];
+  $("month").textContent = p.label;
+  $("prev").disabled = mIdx===0;
+  $("next").disabled = mIdx===periods.length-1;
 
-  const list = rows.filter(r => r.month === m && r.type !== "income");
-  $("budget").innerHTML = list.map(r => {
-    const bal = r.type === "savings" ? r.actual - r.goal : r.goal + r.actual;
-    const col = bal < 0 ? "var(--neg)" : "var(--fg)";
-    return '<div class="row"><span>' + r.category.toUpperCase()
-         + '</span><span class="amt" style="color:' + col + '">' + money(bal) + '</span></div>';
-  }).join("") || '<div class="row"><span>No rows for ' + m + '</span></div>';
-}
+  var want = ["Total In","Total Out","Total Difference","Total Saved"];
+  $("summary").innerHTML = cats.map(function(c,i){
+    if(c.group!=="Summary" || want.indexOf(c.name)<0) return "";
+    var v = p.actual[i], col = (c.name==="Total Out") ? "var(--fg)" : (v<0?"var(--neg)":"var(--pos)");
+    return '<div class="sum"><span>'+c.name.toUpperCase()
+         + '</span><span style="color:'+col+'">'+money(v)+'</span></div>';
+  }).join("");
 
-function renderGoals() {
-  $("goals").innerHTML = goals.map(g => {
-    const pct = g.target > 0 ? Math.min(1, g.current / g.target) : 0;
-    const on = Math.round(pct * 10);
-    let meter = "";
-    for (let i = 0; i < 10; i++) meter += '<i class="' + (i < on ? "on" : "") + '"></i>';
-    return '<div class="goal"><div class="top"><span>' + g.name.toUpperCase()
-         + '</span><span style="color:var(--pos)">' + Math.round(pct * 100) + '%</span></div>'
-         + '<div class="meter">' + meter + '</div></div>';
+  $("budget").innerHTML = cats.map(function(c,i){
+    if(c.group!==group) return "";
+    var bal = p.balance[i];
+    return '<div class="row"><span class="nm">'+c.name.toUpperCase()
+         + '</span><span class="amt" style="color:'+(bal<0?"var(--neg)":"var(--fg)")+'">'
+         + money(bal)+'</span></div>';
   }).join("");
 }
 
-$("prev").onclick = () => { if (monthIndex > 0) { monthIndex--; renderBudget(); } };
-$("next").onclick = () => { if (monthIndex < months.length - 1) { monthIndex++; renderBudget(); } };
+function renderGoals(){
+  $("goals").innerHTML = goals.map(function(g){
+    var pct = g.target>0 ? Math.max(0, Math.min(1, g.saved/g.target)) : 0;
+    var on = Math.round(pct*10), meter="";
+    for(var i=0;i<10;i++) meter += '<i class="'+(i<on?"on":"")+'"></i>';
+    return '<div class="goal"><div class="top"><span>'+g.name.toUpperCase()
+         + '</span><span style="color:var(--pos)">'+Math.round(pct*100)+'%</span></div>'
+         + '<div class="meter">'+meter+'</div></div>';
+  }).join("");
+}
 
-Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), btn => {
-  btn.onclick = () => {
-    Array.prototype.forEach.call(document.querySelectorAll(".tabs button"),
-      b => b.setAttribute("aria-pressed", "false"));
-    btn.setAttribute("aria-pressed", "true");
-    chartMonths = parseInt(btn.dataset.months, 10);
+$("prev").onclick = function(){ if(mIdx>0){ mIdx--; renderBudget(); } };
+$("next").onclick = function(){ if(mIdx<periods.length-1){ mIdx++; renderBudget(); } };
+
+Array.prototype.forEach.call($("rangeTabs").children, function(btn){
+  btn.onclick = function(){
+    Array.prototype.forEach.call($("rangeTabs").children, function(b){ b.setAttribute("aria-pressed","false"); });
+    btn.setAttribute("aria-pressed","true");
+    chartMonths = parseInt(btn.dataset.months,10);
     renderNetWorth();
   };
 });
