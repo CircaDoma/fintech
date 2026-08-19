@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-title" content="CASH MONEY">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>CASH MONEY</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -84,7 +87,14 @@
   #stamp { display:block; width:100%; border:0; background:none;
            font-family:'Silkscreen',monospace; letter-spacing:.5px;
            font-size:11px; color:var(--dim); text-align:center;
-           padding:34px 0 10px; }
+           padding:34px 0 4px; }
+  #updated { font-size:11px; color:var(--dim); text-align:center; padding:0 0 14px; }
+  #staleBanner { background:var(--neg); color:#FFFFFF; font-size:11px; line-height:1.6;
+                 padding:10px 12px; margin:14px 0 4px;
+                 display:flex; align-items:flex-start; gap:10px; }
+  #staleBanner span { flex:1; }
+  #bannerX { flex-shrink:0; border:0; background:none; color:#FFFFFF;
+             padding:2px 0 0; margin:0; line-height:0; cursor:pointer; }
   #logo-wrap { display:flex; justify-content:center; padding:0 0 6px; color:var(--dim); }
   #logo-wrap svg { width:104px; height:auto; display:block; }
   .view { min-height:calc(100svh - 210px); }
@@ -127,7 +137,7 @@
 </head>
 <body>
 
-<script src="config.js"></script>
+<script src="config.js?v=8"></script>
 
 <div id="gate">
   <p>CASH MONEY</p>
@@ -161,6 +171,7 @@
   </section>
 
   <section id="v-budget" class="view hidden">
+    <div id="staleBanner" class="hidden"></div>
     <h2 class="eyebrow" id="bHeroLabel">LEFT THIS MONTH</h2>
     <div class="d hero" id="bHero">&mdash;</div>
 
@@ -189,6 +200,7 @@
   </section>
 
   <button id="stamp" aria-label="Refresh data"></button>
+  <div id="updated"></div>
   <div id="logo-wrap"><svg id="logo" viewBox="0 0 396 144" fill="currentColor" aria-hidden="true">
   <g>
     <g>
@@ -239,10 +251,12 @@ var periods=[];     // {label, goal[], actual[], balance[]}
 var nw=[];          // {label, value}
 var goals=[];       // {name, saved, target}
 var accts=[];       // {name, value} - latest balance per account
+var lastTxn="";     // BD1: date of the newest transaction entered
 var mIdx=0, chartMonths=0, view="worth";
 var sel=[];         // indices into accts; empty = show combined total
 var cachedAt=0;
-var CACHE_V=3;
+var CACHE_V=4;
+var BUILD="v8";
 
 function money(n){ return (n<0?"-":"")+"$"+Math.abs(Math.round(n)).toLocaleString(); }
 
@@ -252,6 +266,31 @@ var MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE",
 /* Column A can arrive in several shapes depending on the sheet's display format.
    The YYYY-MM test runs first on purpose: new Date("2025-01-01") is parsed as UTC
    and lands in the previous month for anyone west of Greenwich. */
+/* BD1 can arrive as an ISO date, a US date, or a formatted string.
+   ISO is tested first: new Date("2026-08-14") is parsed as UTC and lands a day
+   early anywhere west of Greenwich. */
+function parseDate(v){
+  var t = String(v==null ? "" : v).trim();
+  if(!t) return null;
+  var iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t);
+  if(iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
+  var us = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/.exec(t);
+  if(us) return new Date(+us[3], +us[1]-1, +us[2]);
+  var d = new Date(t);
+  return isNaN(d) ? null : d;
+}
+
+function daysSince(d){
+  if(!d) return null;
+  var a = new Date(); a.setHours(0,0,0,0);
+  var b = new Date(d); b.setHours(0,0,0,0);
+  return Math.round((a-b)/86400000);
+}
+
+function agoText(n){
+  return n<=0 ? "TODAY" : n===1 ? "1 DAY AGO" : n+" DAYS AGO";
+}
+
 function monthLabel(v){
   var t = String(v==null ? "" : v).trim();
   var m = /^(\d{4})[-\/](\d{1,2})/.exec(t);
@@ -274,7 +313,8 @@ function cacheKey(){ return "cache:"+CACHE_V+":"+sheetId; }
 function saveCache(){
   try {
     localStorage.setItem(cacheKey(), JSON.stringify({
-      ts:Date.now(), cats:cats, periods:periods, nw:nw, goals:goals, accts:accts
+      ts:Date.now(), cats:cats, periods:periods, nw:nw, goals:goals,
+      accts:accts, lastTxn:lastTxn
     }));
   } catch(e){ /* quota or private mode - not fatal */ }
 }
@@ -287,7 +327,7 @@ function loadCache(){
     var c = JSON.parse(raw);
     if(!c.periods || !c.periods.length) return false;
     cats=c.cats; periods=c.periods; nw=c.nw||[]; goals=c.goals||[];
-    accts=c.accts||[]; cachedAt=c.ts||0; sel=[];
+    accts=c.accts||[]; lastTxn=c.lastTxn||""; cachedAt=c.ts||0; sel=[];
     pickCurrentMonth();
     return true;
   } catch(e){ return false; }
@@ -303,6 +343,38 @@ function setStamp(){
           :             Math.floor(mins/1440)+" DAYS AGO";
   el.textContent = "LAST SYNCED " + ago;
   el.style.color = mins>2880 ? "var(--neg)" : "var(--dim)";
+  setUpdated();
+}
+
+var STALE_DAYS = 7;
+var bannerOff = false;   /* in memory only: comes back on reload or resync */
+
+function setUpdated(){
+  var d = parseDate(lastTxn), n = daysSince(d);
+  $("updated").textContent = (n===null)
+    ? ""
+    : "BUDGET LAST UPDATED " + agoText(n) + "  \u00B7  " + BUILD;
+
+  var b = $("staleBanner");
+  if(n !== null && n > STALE_DAYS && !bannerOff){
+    b.innerHTML = '<span>BUDGET LAST UPDATED ' + agoText(n)
+                + '. ADD YOUR RECENT TRANSACTIONS FOR ACCURATE NUMBERS.</span>'
+                + '<button id="bannerX" aria-label="Dismiss">'
+                + '<svg viewBox="0 0 7 7" width="11" height="11" shape-rendering="crispEdges" '
+                + 'fill="currentColor" aria-hidden="true">'
+                + '<rect x="0" y="0" width="2" height="1"/><rect x="5" y="0" width="2" height="1"/>'
+                + '<rect x="1" y="1" width="2" height="1"/><rect x="4" y="1" width="2" height="1"/>'
+                + '<rect x="2" y="2" width="3" height="1"/>'
+                + '<rect x="2" y="3" width="3" height="1"/>'
+                + '<rect x="2" y="4" width="3" height="1"/>'
+                + '<rect x="1" y="5" width="2" height="1"/><rect x="4" y="5" width="2" height="1"/>'
+                + '<rect x="0" y="6" width="2" height="1"/><rect x="5" y="6" width="2" height="1"/>'
+                + '</svg></button>';
+    $("bannerX").onclick = function(){ bannerOff = true; setUpdated(); };
+    b.classList.remove("hidden");
+  } else {
+    b.classList.add("hidden");
+  }
 }
 
 function showApp(){
@@ -378,6 +450,7 @@ async function load(){
     + "?ranges=" + encodeURIComponent(TAB+"!A1:AF")
     + "&ranges=" + encodeURIComponent(TAB+"!AH1:AY")
     + "&ranges=" + encodeURIComponent(TAB+"!AZ1:BC")
+    + "&ranges=" + encodeURIComponent(TAB+"!BD1")
     + "&valueRenderOption=UNFORMATTED_VALUE"
     + "&dateTimeRenderOption=FORMATTED_STRING";
   try {
@@ -387,7 +460,9 @@ async function load(){
     if(!res.ok){ fail("Sheet error: "+((data.error&&data.error.message)||res.status)); return; }
     var v = data.valueRanges.map(function(r){ return r.values||[]; });
     parseBudget(v[0]); parseNetWorth(v[1]); parseGoals(v[2]);
+    lastTxn = (v[3] && v[3][0] && v[3][0][0] != null) ? String(v[3][0][0]) : "";
     if(!periods.length){ fail("No month rows found on the "+TAB+" tab."); return; }
+    bannerOff = false;
     cachedAt = Date.now();
     saveCache();
     showApp();
@@ -463,6 +538,8 @@ function parseNetWorth(rows){
 }
 
 /* Section 3: Category / Saved / Remainder / Goal, ending before any total row. */
+var HIDE_GOALS = ["Tax Fund"];
+
 function parseGoals(rows){
   goals = [];
   for(var r=1;r<rows.length;r++){
@@ -471,6 +548,10 @@ function parseGoals(rows){
     if(!nm) continue;
     var s = String(nm).trim();
     if(/^total/i.test(s)) break;
+    var skip = false;
+    for(var k=0;k<HIDE_GOALS.length;k++)
+      if(HIDE_GOALS[k].toLowerCase() === s.toLowerCase()) skip = true;
+    if(skip) continue;
     goals.push({ name:s, saved:num(cell(row,1)), target:num(cell(row,3)) });
   }
 }
