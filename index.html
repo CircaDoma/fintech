@@ -141,7 +141,7 @@
 </head>
 <body>
 
-<script src="config.js?v=12"></script>
+<script src="config.js?v=13"></script>
 
 <div id="gate">
   <p>CASH MONEY</p>
@@ -260,7 +260,7 @@ var mIdx=0, chartMonths=0, view="worth";
 var sel=[];         // indices into accts; empty = show combined total
 var cachedAt=0;
 var CACHE_V=4;
-var BUILD="v12";
+var BUILD="v13";
 
 function money(n){ return (n<0?"-":"")+"$"+Math.abs(Math.round(n)).toLocaleString(); }
 
@@ -395,7 +395,7 @@ function setStamp(){
   setUpdated();
 }
 
-var STALE_DAYS = 7;
+var STALE_DAYS = 14;
 var bannerOff = false;   /* in memory only: comes back on reload or resync */
 
 function setUpdated(){
