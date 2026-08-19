@@ -92,9 +92,13 @@
   #staleBanner { background:var(--neg); color:#FFFFFF; font-size:11px; line-height:1.6;
                  padding:10px 12px; margin:14px 0 4px;
                  display:flex; align-items:flex-start; gap:10px; }
+  #staleBanner.hidden { display:none; }
   #staleBanner span { flex:1; }
   #bannerX { flex-shrink:0; border:0; background:none; color:#FFFFFF;
-             padding:2px 0 0; margin:0; line-height:0; cursor:pointer; }
+             width:32px; height:32px; margin:-6px -6px 0 0; padding:0;
+             line-height:0; cursor:pointer;
+             display:flex; align-items:center; justify-content:center; }
+  #bannerX:active { opacity:.55; }
   #logo-wrap { display:flex; justify-content:center; padding:0 0 6px; color:var(--dim); }
   #logo-wrap svg { width:104px; height:auto; display:block; }
   .view { min-height:calc(100svh - 210px); }
@@ -137,7 +141,7 @@
 </head>
 <body>
 
-<script src="config.js?v=8"></script>
+<script src="config.js?v=12"></script>
 
 <div id="gate">
   <p>CASH MONEY</p>
@@ -256,26 +260,82 @@ var mIdx=0, chartMonths=0, view="worth";
 var sel=[];         // indices into accts; empty = show combined total
 var cachedAt=0;
 var CACHE_V=4;
-var BUILD="v8";
+var BUILD="v12";
 
 function money(n){ return (n<0?"-":"")+"$"+Math.abs(Math.round(n)).toLocaleString(); }
 
 var MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE",
                    "JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
 
-/* Column A can arrive in several shapes depending on the sheet's display format.
-   The YYYY-MM test runs first on purpose: new Date("2025-01-01") is parsed as UTC
-   and lands in the previous month for anyone west of Greenwich. */
-/* BD1 can arrive as an ISO date, a US date, or a formatted string.
-   ISO is tested first: new Date("2026-08-14") is parsed as UTC and lands a day
-   early anywhere west of Greenwich. */
+function monthFromName(str){
+  var k = String(str).trim().toUpperCase().slice(0,3);
+  for(var i=0;i<12;i++) if(MONTH_NAMES[i].slice(0,3) === k) return i;
+  return -1;
+}
+
+/* Only ISO strings are guaranteed parseable by new Date(). Everything else is
+   engine-defined: V8 accepts "Dec 2026", Safari's JavaScriptCore returns
+   Invalid Date for it. So every shape is matched explicitly, and new Date()
+   is only a last resort. */
+function parseMonthParts(v){
+  var t = String(v==null ? "" : v).trim();
+  if(!t) return null;
+  var m;
+
+  m = /^(\d{4})[-\/.](\d{1,2})/.exec(t);                 /* 2026-12, 2026-12-01 */
+  if(m) return { y:+m[1], m:+m[2]-1 };
+
+  m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/.exec(t);  /* 12/1/2026 */
+  if(m) return { y:+m[3], m:+m[1]-1 };
+
+  m = /^([A-Za-z]{3,9})[\s\-.,]+(\d{2,4})/.exec(t);      /* Dec 2026, December 2026 */
+  if(m){
+    var mi = monthFromName(m[1]);
+    if(mi >= 0){ var y = +m[2]; return { y: y<100 ? 2000+y : y, m:mi }; }
+  }
+
+  m = /^(\d{4})[\s\-.,]+([A-Za-z]{3,9})/.exec(t);        /* 2026 Dec */
+  if(m){
+    var mj = monthFromName(m[2]);
+    if(mj >= 0) return { y:+m[1], m:mj };
+  }
+
+  var d = new Date(t);
+  if(!isNaN(d)) return { y:d.getFullYear(), m:d.getMonth() };
+  return null;
+}
+
+function monthLabel(v){
+  var p = parseMonthParts(v);
+  return p ? MONTH_NAMES[p.m] + " " + p.y
+           : String(v==null ? "" : v).trim().toUpperCase();
+}
+
+/* Full-date parsing for BD1. Same rule as above: match every shape explicitly
+   and only fall back to new Date() for anything unmatched. */
 function parseDate(v){
   var t = String(v==null ? "" : v).trim();
   if(!t) return null;
-  var iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t);
-  if(iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
-  var us = /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/.exec(t);
-  if(us) return new Date(+us[3], +us[1]-1, +us[2]);
+  var m;
+
+  m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/.exec(t);            /* 2026-08-14 */
+  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+
+  m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/.exec(t);            /* 8/14/2026 */
+  if(m) return new Date(+m[3], +m[1]-1, +m[2]);
+
+  m = /^([A-Za-z]{3,9})[\s.]+(\d{1,2})(?:st|nd|rd|th)?[\s,]+(\d{4})/.exec(t);  /* Aug 14, 2026 */
+  if(m){
+    var mi = monthFromName(m[1]);
+    if(mi >= 0) return new Date(+m[3], mi, +m[2]);
+  }
+
+  m = /^(\d{1,2})[\s.-]+([A-Za-z]{3,9})[\s.,-]+(\d{4})/.exec(t);   /* 14 Aug 2026 */
+  if(m){
+    var mj = monthFromName(m[2]);
+    if(mj >= 0) return new Date(+m[3], mj, +m[1]);
+  }
+
   var d = new Date(t);
   return isNaN(d) ? null : d;
 }
@@ -288,19 +348,7 @@ function daysSince(d){
 }
 
 function agoText(n){
-  return n<=0 ? "TODAY" : n===1 ? "1 DAY AGO" : n+" DAYS AGO";
-}
-
-function monthLabel(v){
-  var t = String(v==null ? "" : v).trim();
-  var m = /^(\d{4})[-\/](\d{1,2})/.exec(t);
-  if(m){
-    var mi = parseInt(m[2],10) - 1;
-    if(mi>=0 && mi<12) return MONTH_NAMES[mi] + " " + m[1];
-  }
-  var d = new Date(t);
-  if(!isNaN(d)) return MONTH_NAMES[d.getMonth()] + " " + d.getFullYear();
-  return t.toUpperCase();
+  return n<=0 ? "TODAY" : n===1 ? "1 DAY AGO" : n + " DAYS AGO";
 }
 function num(v){ if(typeof v==="number") return v;
   var p=parseFloat(String(v==null?"":v).replace(/[^0-9.-]/g,"")); return isNaN(p)?0:p; }
@@ -341,7 +389,8 @@ function setStamp(){
           : mins<60   ? mins+" MIN AGO"
           : mins<1440 ? Math.floor(mins/60)+" HR AGO"
           :             Math.floor(mins/1440)+" DAYS AGO";
-  el.textContent = "LAST SYNCED " + ago;
+  el.textContent = token ? ("LAST SYNCED " + ago)
+                         : ("LAST SYNCED " + ago + "  \u00B7  TAP TO SYNC");
   el.style.color = mins>2880 ? "var(--neg)" : "var(--dim)";
   setUpdated();
 }
@@ -421,10 +470,10 @@ var waiting = setInterval(function(){
     }
   });
   $("signin").disabled=false;
-  if(sheetId){
-    if(loadCache()) showApp();
-    tokenClient.requestAccessToken({prompt:""});
-  }
+  /* Safari blocks any popup not opened directly by a tap, and Google's token
+     client opens one even with prompt:"". So boot renders from cache only;
+     every token request below is triggered by a user gesture. */
+  if(sheetId && loadCache()) showApp();
 }, 100);
 
 $("signin").onclick  = function(){ $("err").textContent=""; tokenClient.requestAccessToken(); };
@@ -502,8 +551,8 @@ function pickCurrentMonth(){
   mIdx = periods.length - 1;
   var now = new Date(), y = now.getFullYear(), m = now.getMonth();
   for(var i=0;i<periods.length;i++){
-    var d = new Date(periods[i].label);
-    if(!isNaN(d) && d.getFullYear()===y && d.getMonth()===m){ mIdx=i; break; }
+    var p = parseMonthParts(periods[i].label);
+    if(p && p.y===y && p.m===m){ mIdx=i; break; }
   }
 }
 
